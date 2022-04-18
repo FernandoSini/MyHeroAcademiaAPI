@@ -1,11 +1,13 @@
 package models
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type Hero struct {
-	id        string      `json:"id,omitempty"`
-	trueName  string      `json:"trueName"`
-	lastName  string      `json:"lastName"`
-	heroName  string      `json:"heroName"`
-	heroRank  uint        `json:"heroRank,omitempty""`
-	age       uint        `json:"age""`
-	heroImage []HeroImage `json:"images,omitempty""`
+	Id        primitive.ObjectID `json:"id,omitempty"`
+	TrueName  string             `json:"trueName"`
+	LastName  string             `json:"lastName"`
+	HeroName  string             `json:"heroName"`
+	HeroRank  int64              `json:"heroRank,omitempty"`
+	Age       int64              `json:"age"`
+	HeroImage []HeroImage        `json:"images,omitempty"`
 }

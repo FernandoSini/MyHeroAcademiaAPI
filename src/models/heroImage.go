@@ -1,6 +1,9 @@
 package models
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type HeroImage struct {
-	id       string `json:"id,omitempty"`
-	imageUrl string `json:"imageUrl,omitempty"`
+	Id        primitive.ObjectID `json:"id,omitempty"`
+	ImageUrl  string             `json:"imageUrl,omitempty"`
+	IdHeroRef primitive.ObjectID `json:"idHeroRef,omitempty"`
 }
