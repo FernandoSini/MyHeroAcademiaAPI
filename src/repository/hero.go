@@ -1,4 +1,4 @@
-package respository
+package repository
 
 import (
 	"MyHeroAcademiaApi/src/models"
@@ -11,18 +11,18 @@ type Hero struct {
 	db *mongo.Client
 }
 
-func newHeroRepository(db *mongo.Client) *Hero {
+func NewHeroRepository(db *mongo.Client) *Hero {
 	return &Hero{db}
 }
 
-func (repos Hero) CreateHero(hero models.Hero) error {
+func (repos Hero) CreateHero(hero models.Hero) (*mongo.InsertOneResult, error) {
 	result, err := repos.db.Database("MyHeroDataBase").Collection("Hero").InsertOne(context.Background(),
 		hero,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Println(result.InsertedID)
 
-	return nil
+	return result, nil
 }
