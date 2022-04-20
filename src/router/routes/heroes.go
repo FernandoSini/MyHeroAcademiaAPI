@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-var routesUser = []Route{
+var heroesRoute = []Route{
 
 	{
 		URI:      "/heroes",

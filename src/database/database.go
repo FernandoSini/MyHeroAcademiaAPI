@@ -36,6 +36,7 @@ func Connect() (*mongo.Client, error) {
 	}
 	if erro = client.Ping(context.TODO(), nil); erro != nil {
 		client.Disconnect(context.TODO())
+		log.Fatal(erro)
 		return nil, erro
 	}
 
