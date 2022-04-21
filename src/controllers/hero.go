@@ -7,19 +7,41 @@ import (
 	"MyHeroAcademiaApi/src/responses"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func FindAllHeroes(w http.ResponseWriter, r *http.Request) {}
+func FindAllHeroes(w http.ResponseWriter, r *http.Request) {
+	db, err := database.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	repo := repository.NewHeroRepository(db)
+	heroes, err := repo.FindHeroes()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if len(heroes) <= 0 && err == nil {
+		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, heroes)
+
+}
 
 func FindHeroById(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	heroId := params["heroId"]
 	if len(heroId) <= 0 || heroId == "" {
-		responses.Erro(w, http.StatusNotFound, errors.New("Not found!"))
+		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
+		return
 	}
 
 	db, err := database.Connect()
@@ -31,8 +53,9 @@ func FindHeroById(w http.ResponseWriter, r *http.Request) {
 	hero, err := repo.FindHeroByID(heroId)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
+		return
 	}
-	
+
 	if hero.Id.Hex() != heroId {
 		responses.Erro(w, http.StatusForbidden, errors.New("forbidden action"))
 		return
@@ -76,7 +99,7 @@ func UpdateHero(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	heroId := params["userId"]
 	if len(heroId) > 0 || heroId != "" {
-		responses.Erro(w, http.StatusNotFound, errors.New("Not found!"))
+		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
 	}
 
 	db, err := database.Connect()
@@ -118,4 +141,27 @@ func UpdateHero(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-func DeleteHero(w http.ResponseWriter, r *http.Request) {}
+func DeleteHero(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	heroId := params["heroId"]
+	if len(heroId) <= 0 || heroId == "" {
+		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	repo := repository.NewHeroRepository(db)
+	if err = repo.DeleteHero(heroId); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, nil)
+
+}
