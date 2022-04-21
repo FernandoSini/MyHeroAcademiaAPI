@@ -4,6 +4,7 @@ import (
 	"MyHeroAcademiaApi/src/models"
 	"context"
 	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -55,7 +56,7 @@ func (repos Hero) FindHeroByID(id string) (models.Hero, error) {
 	err = repos.db.Database("MyHeroDataBase").
 		Collection("Hero").
 		FindOne(context.Background(),
-			bson.D{{"_id", objectId}},
+			bson.D{{Key: "_id", Value: objectId}},
 		).
 		Decode(&hero)
 
@@ -67,5 +68,49 @@ func (repos Hero) FindHeroByID(id string) (models.Hero, error) {
 
 func (repos Hero) UpdateHero(id string, hero models.Hero) error {
 	//result, erro := repos.db.Database("MyHeroDatabase").Collection("Hero").FindOne(context.Background())
+	return nil
+}
+
+func (repos Hero) FindHeroes() ([]models.Hero, error) {
+	hero := models.Hero{}
+	heroes := []models.Hero{}
+
+	result, err := repos.db.Database("MyHeroDataBase").
+		Collection("Hero").
+		Find(context.Background(), bson.D{})
+
+	if err != nil {
+
+		return nil, err
+	}
+	defer result.Close(context.Background())
+
+	for result.Next(context.Background()) {
+		if err = result.Decode(&hero); err != nil {
+			return nil, err
+		}
+
+		heroes = append(heroes, hero)
+	}
+
+	return heroes, nil
+}
+
+func (repos Hero) DeleteHero(id string) error {
+
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+
+		return err
+	}
+	_, err = repos.db.Database("MyHeroDataBase").
+		Collection("Hero").
+		DeleteOne(context.Background(),
+			bson.D{{Key: "_id", Value: objectId}},
+		)
+
+	if err != nil {
+		return err
+	}
 	return nil
 }

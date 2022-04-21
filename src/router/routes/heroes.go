@@ -35,12 +35,12 @@ var heroesRoute = []Route{
 		URI:      "/heroes/update/{heroId}",
 		Method:   http.MethodPut,
 		Function: controllers.UpdateHero,
-		NeedAuth: true,
+		NeedAuth: false,
 	},
 	{
 		URI:      "/heroes/delete/{heroId}",
 		Method:   http.MethodDelete,
 		Function: controllers.DeleteHero,
-		NeedAuth: true,
+		NeedAuth: false,
 	},
 }
