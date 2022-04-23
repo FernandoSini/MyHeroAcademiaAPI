@@ -1,0 +1,37 @@
+version: "3"
+
+volumes: 
+  esdata01:
+    driver: local
+
+services:
+  #mongodb:
+   # image: mongo
+   # container_name: mongodb
+   # restart: unless-stopped
+   # ports:
+    #     - 27017:27017
+
+  web:
+    build: .
+    container_name: my-hero-academia-api
+   # env_file:
+    #    - ./.env
+    environment:
+        API_PORT: ${API_PORT} 
+        SECRET_KEY: ${SECRET_KEY}
+        URL: mongodb://mongodb:${MONGO_PORT}/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false
+        DBNAME: ${DBNAME}
+        MONGO_PORT: ${MONGO_PORT}
+    ports:
+        - "${API_PORT}:${API_PORT}"
+        - "${MONGO_PORT}:${MONGO_PORT}"
+        
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo
+    container_name: mongo
+   
+       

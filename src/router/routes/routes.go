@@ -21,7 +21,8 @@ func ConfigureRoutes(r *mux.Router) *mux.Router {
 		if route.NeedAuth {
 
 		} else {
-			r.HandleFunc(route.URI, middlewares.Logger(route.Function)).Methods(route.Method)
+			r.HandleFunc(route.URI, middlewares.Logger(route.Function)).Methods(route.Method).Headers()
+			
 		}
 	}
 	return r
