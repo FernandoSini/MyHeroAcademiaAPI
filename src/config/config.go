@@ -28,7 +28,7 @@ func Carregar() {
 	if erro != nil {
 		Porta = 5000
 	}
-	UrlConexao = fmt.Sprintf(os.Getenv("URL"))
+	UrlConexao = fmt.Sprintln(os.Getenv("URL"))
 
 	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 

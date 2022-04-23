@@ -4,6 +4,7 @@ import (
 	"MyHeroAcademiaApi/src/models"
 	"context"
 	"fmt"
+	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,14 +14,20 @@ import (
 type Hero struct {
 	db *mongo.Client
 }
+type HeroImage struct {
+	db *mongo.Client
+}
 
 func NewHeroRepository(db *mongo.Client) *Hero {
 	return &Hero{db}
 }
+func NewHeroImageRepository(db *mongo.Client) *HeroImage {
+	return &HeroImage{db}
+}
 
 //old method trying to send primitive id to controller after created hero in db
 /*func (repos Hero) CreateHero(hero models.Hero) (string, error) {
-	result, err := repos.db.Database("MyHeroDataBase").Collection("Hero").InsertOne(context.Background(),
+	result, err := repos.db.Database(os.Getenv("DBNAME")).Collection("Hero").InsertOne(context.Background(),
 		hero,
 	)
 	if err != nil {
@@ -31,7 +38,7 @@ func NewHeroRepository(db *mongo.Client) *Hero {
 	return fmt.Sprintf("%v", result.InsertedID), nil
 }*/
 func (repos Hero) CreateHero(hero models.Hero) error {
-	result, err := repos.db.Database("MyHeroDataBase").Collection("Hero").InsertOne(context.Background(),
+	result, err := repos.db.Database(os.Getenv("DBNAME")).Collection("Hero").InsertOne(context.Background(),
 		hero,
 	)
 	if err != nil {
@@ -53,7 +60,7 @@ func (repos Hero) FindHeroByID(id string) (models.Hero, error) {
 
 		return hero, err
 	}
-	err = repos.db.Database("MyHeroDataBase").
+	err = repos.db.Database(os.Getenv("DBNAME")).
 		Collection("Hero").
 		FindOne(context.Background(),
 			bson.D{{Key: "_id", Value: objectId}},
@@ -67,7 +74,7 @@ func (repos Hero) FindHeroByID(id string) (models.Hero, error) {
 }
 
 func (repos Hero) UpdateHero(id string, hero models.Hero) error {
-	//result, erro := repos.db.Database("MyHeroDatabase").Collection("Hero").FindOne(context.Background())
+	//result, erro := repos.db.Database(os.Getenv("DBNAME")).Collection("Hero").FindOne(context.Background())
 	return nil
 }
 
@@ -75,7 +82,7 @@ func (repos Hero) FindHeroes() ([]models.Hero, error) {
 	hero := models.Hero{}
 	heroes := []models.Hero{}
 
-	result, err := repos.db.Database("MyHeroDataBase").
+	result, err := repos.db.Database(os.Getenv("DBNAME")).
 		Collection("Hero").
 		Find(context.Background(), bson.D{})
 
@@ -103,7 +110,7 @@ func (repos Hero) DeleteHero(id string) error {
 
 		return err
 	}
-	_, err = repos.db.Database("MyHeroDataBase").
+	_, err = repos.db.Database(os.Getenv("DBNAME")).
 		Collection("Hero").
 		DeleteOne(context.Background(),
 			bson.D{{Key: "_id", Value: objectId}},
@@ -112,5 +119,20 @@ func (repos Hero) DeleteHero(id string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (repo HeroImage) AddHeroImage(heroImage models.HeroImage) error {
+	result, err := repo.db.Database(os.Getenv("DBNAME")).Collection("HeroImage").InsertOne(context.Background(), heroImage)
+	if err != nil {
+		return err
+	}
+	fmt.Println(result.InsertedID)
+
+	if err != nil {
+		fmt.Println("caiu aqui")
+		return err
+	}
+
 	return nil
 }

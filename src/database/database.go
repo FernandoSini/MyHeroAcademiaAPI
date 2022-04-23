@@ -3,11 +3,12 @@ package database
 import (
 	"MyHeroAcademiaApi/src/config"
 	"context"
+	"log"
+	"os"
+
 	"github.com/juju/mgo/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"os"
 )
 
 //usando driver custom
@@ -29,7 +30,7 @@ func ConnectCustom() (*mgo.Session, error) {
 //function to connect on mongo db server
 func Connect() (*mongo.Client, error) {
 	//doing connection with mongo
-	clientOptions := options.Client().ApplyURI(os.Getenv("URL"))
+	clientOptions := options.Client().SetDirect(true).ApplyURI(os.Getenv("URL"))
 	client, erro := mongo.Connect(context.TODO(), clientOptions)
 	if erro != nil {
 		return nil, erro
