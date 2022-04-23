@@ -5,12 +5,19 @@ import (
 	"MyHeroAcademiaApi/src/models"
 	"MyHeroAcademiaApi/src/repository"
 	"MyHeroAcademiaApi/src/responses"
+	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func FindAllHeroes(w http.ResponseWriter, r *http.Request) {
@@ -163,5 +170,83 @@ func DeleteHero(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.JSON(w, http.StatusOK, nil)
+
+}
+
+func AddHeroImage(w http.ResponseWriter, r *http.Request) {
+	const MaxUploadSize = 10 << 20
+	params := mux.Vars(r)
+	heroId, err := primitive.ObjectIDFromHex(params["heroId"])
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, MaxUploadSize)
+
+	if err := r.ParseMultipartForm(MaxUploadSize); err != nil {
+		responses.Erro(w, http.StatusNotFound, errors.New("The uploaded file is too big. Please choose an file that's less than 1MB in size"))
+		return
+	}
+
+	if len(heroId) <= 0 || heroId.Hex() == "" {
+		responses.Erro(w, http.StatusInternalServerError, errors.New(" sorry, we can't upload image to null hero"))
+		return
+	}
+
+	file, fileHandler, err := r.FormFile("file")
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+	defer file.Close()
+
+	/* //creating upload directory if it doesn't exists
+	err = os.Mkdir("./uploads", os.ModePerm) */
+
+	path, err := os.Create(filepath.Join("/Users/fernandosini/Documents/go.nosync/myheroapi/MyHeroAcademiaApi/uploads", filepath.Base(fileHandler.Filename)))
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, errors.New("sorry, can't upload image to directory"))
+		return
+	}
+	defer path.Close()
+	if _, err = io.Copy(path, file); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	if _, err = io.Copy(path, file); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	//creating buffer based on file size
+	fileInfo, _ := path.Stat()
+	var size int64 = fileInfo.Size()
+	buffer := make([]byte, size)
+
+	//read file content into buffer
+	fileReader := bufio.NewReader(path)
+	fileReader.Read(buffer)
+
+	//convert buffer bytes to base64 string - use buffer.Bytes() for new image
+	imgBase64Str := base64.StdEncoding.EncodeToString(buffer)
+	fmt.Fprintf(w, imgBase64Str)
+
+	//decoding image
+	imgStringDecoded, _ := base64.StdEncoding.DecodeString(imgBase64Str)
+	fmt.Println(imgStringDecoded)
+	pathFromFile := "\\MyheroAcademiaApi\\uploads\\" + fileHandler.Filename
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	repo := repository.NewHeroImageRepository(db)
+	heroImage := models.HeroImage{}
+	heroImage.ImagePath = pathFromFile
+	heroImage.FileName = fileHandler.Filename
+	heroImage.ImgData = imgBase64Str
+	heroImage.IdHeroRef = heroId
+	repo.AddHeroImage(heroImage)
 
 }
