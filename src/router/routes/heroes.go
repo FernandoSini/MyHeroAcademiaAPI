@@ -43,10 +43,16 @@ var heroesRoute = []Route{
 		Function: controllers.DeleteHero,
 		NeedAuth: false,
 	},
-	{
+	/* {
 		URI:      "/heroes/{heroId}/addImage",
 		Method:   http.MethodPost,
 		Function: controllers.AddHeroImage,
+		NeedAuth: false,
+	}, */
+	{
+		URI:      "/heroes/{heroName}",
+		Method:   http.MethodGet,
+		Function: controllers.FindHeroByHeroName,
 		NeedAuth: false,
 	},
 }

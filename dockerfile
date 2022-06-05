@@ -7,7 +7,7 @@ RUN mkdir /app
 ADD . /app
 # Set the Current Working Directory inside the container
 WORKDIR /app/my-hero-academia-api
-
+RUN cd /app/my-hero-academia-api && mkdir tmp
 
 # We want to populate the module cache based on the go.{mod,sum} files.
 COPY go.mod .
