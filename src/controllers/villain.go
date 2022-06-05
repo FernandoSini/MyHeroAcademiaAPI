@@ -6,32 +6,24 @@ import (
 	"MyHeroAcademiaApi/src/repository"
 	"MyHeroAcademiaApi/src/responses"
 	"bytes"
+	"context"
+	"encoding/binary"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 
-	// "bufio"
-	"context"
-	// "encoding/base64"
-	"encoding/json"
-	"errors"
-
-	// "fmt"
-	// "io"
-	"io/ioutil"
-	"net/http"
-
-	// "os"
-	// "path/filepath"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/gorilla/mux"
-	"github.com/juju/mgo/v2/bson"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	//"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func FindAllHeroes(w http.ResponseWriter, r *http.Request) {
+func FindAllVillains(w http.ResponseWriter, _ *http.Request) {
 	db, err := database.Connect()
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
@@ -39,28 +31,28 @@ func FindAllHeroes(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Disconnect(context.Background())
 
-	repo := repository.NewHeroRepository(db)
-	heroes, err := repo.FindHeroes()
+	repo := repository.NewVillainRepository(db)
+	villains, err := repo.FindVillains()
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	if len(heroes) <= 0 && err == nil {
-		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
+	if len(villains) <= 0 && err == nil {
+		responses.Erro(w, http.StatusNotFound, errors.New(" Not found villains! "))
 		return
 	}
 
-	responses.JSON(w, http.StatusOK, heroes)
+	responses.JSON(w, http.StatusOK, villains)
 
 }
 
-func FindHeroById(w http.ResponseWriter, r *http.Request) {
+func FindVillainById(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	heroId := params["heroId"]
-	if len(heroId) <= 0 || heroId == "" {
-		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
+	villainId := params["villainId"]
+	if len(villainId) <= 0 || villainId == "" {
+		responses.Erro(w, http.StatusNotFound, errors.New(" Not found this villain! "))
 		return
 	}
 
@@ -70,41 +62,43 @@ func FindHeroById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Disconnect(context.Background())
-
-	repo := repository.NewHeroRepository(db)
-	hero, err := repo.FindHeroByID(heroId)
+	repo := repository.NewVillainRepository(db)
+	villain, err := repo.FindVillainByID(villainId)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	if hero.Id.Hex() != heroId {
+	if villain.Id.Hex() != villainId {
 		responses.Erro(w, http.StatusForbidden, errors.New("forbidden action"))
 		return
 	}
 
-	responses.JSON(w, http.StatusOK, hero)
+	responses.JSON(w, http.StatusOK, villain)
 }
 
-/* func CreateHero(w http.ResponseWriter, r *http.Request) {
+/* func CreateVillain(w http.ResponseWriter, r *http.Request) {
 
-	//getting the body of requisiton and converting to json
+	///getting the body of requisiton and converting to json
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.Erro(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	var hero models.Hero
-	//getting the json sent by the reqBody and converting to hero model
+	var villain models.Villain
+	villain.Id = primitive.NewObjectID()
+	villain.Thumbnail.Id = primitive.NewObjectID()
+	villain.Thumbnail.IdVillainRef = villain.Id
+	//getting the json sent by the reqBody and converting to villain model
 	//marshal --> converts byte/data to json
 	//unmarshal -> converts json to model data
-	if err = json.Unmarshal(reqBody, &hero); err != nil {
+	if err = json.Unmarshal(reqBody, &villain); err != nil {
 		responses.Erro(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if err = hero.Preparar(); err != nil {
+	if err = villain.Preparar(); err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -116,17 +110,17 @@ func FindHeroById(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Disconnect(context.Background())
 
-	repo := repository.NewHeroRepository(db)
-	err = repo.CreateHero(hero)
+	repo := repository.NewVillainRepository(db)
+	err = repo.CreateVillain(villain)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
-	responses.JSON(w, http.StatusOK, "Hero created Successfully")
+	responses.JSON(w, http.StatusOK, "Villain created Successfully")
 
 } */
 
-func CreateHero(w http.ResponseWriter, r *http.Request) {
+func CreateVillain(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
 		responses.Erro(w, http.StatusBadRequest, errors.New("Can't upload image: "+err.Error()))
@@ -141,20 +135,20 @@ func CreateHero(w http.ResponseWriter, r *http.Request) {
 	var byteData []byte
 	file, handler, err := r.FormFile("file")
 	if file == nil || handler.Size == 0 {
-		var hero models.Hero
-		hero.Id = bson.NewObjectId()
-		hero.HeroName = r.PostFormValue("heroName")
-		hero.LastName = r.PostFormValue("lastName")
-		hero.TrueName = r.PostFormValue("trueName")
-		hero.Description = r.PostFormValue("description")
-		hero.Age, err = strconv.ParseInt(r.PostFormValue("age"), 10, 64)
+		var villain models.Villain
+		villain.Id = primitive.NewObjectID()
+		villain.VillainName = r.PostFormValue("villainName")
+		villain.LastName = r.PostFormValue("lastName")
+		villain.TrueName = r.PostFormValue("trueName")
+		villain.Description = r.PostFormValue("description")
+		villain.Age, err = strconv.ParseInt(r.PostFormValue("age"), 10, 64)
 		if err != nil {
 			responses.Erro(w, http.StatusInternalServerError, errors.New("error while trying to convert string to int on age"+err.Error()))
 			return
 		}
-		hero.HeroRank, err = strconv.ParseInt(r.PostFormValue("heroRank"), 10, 64)
+		villain.VillainRank, err = strconv.ParseInt(r.PostFormValue("villainRank"), 10, 64)
 		if err != nil {
-			responses.Erro(w, http.StatusInternalServerError, errors.New("error while trying to convert string to int on heroRank"+err.Error()))
+			responses.Erro(w, http.StatusInternalServerError, errors.New("error while trying to convert string to int on villainRank"+err.Error()))
 			return
 		}
 
@@ -166,7 +160,7 @@ func CreateHero(w http.ResponseWriter, r *http.Request) {
 			return
 		} */
 
-		if err = hero.Preparar(); err != nil {
+		if err = villain.Preparar(); err != nil {
 			responses.Erro(w, http.StatusInternalServerError, err)
 			return
 		}
@@ -178,13 +172,13 @@ func CreateHero(w http.ResponseWriter, r *http.Request) {
 		}
 		defer db.Disconnect(context.Background())
 
-		repo := repository.NewHeroRepository(db)
-		err = repo.CreateHero(hero)
+		repo := repository.NewVillainRepository(db)
+		err = repo.CreateVillain(villain)
 		if err != nil {
 			responses.Erro(w, http.StatusInternalServerError, err)
 			return
 		}
-		responses.JSON(w, http.StatusOK, "Hero created Successfully")
+		responses.JSON(w, http.StatusOK, "Villain created Successfully")
 
 	} else {
 		if err != nil {
@@ -229,30 +223,30 @@ func CreateHero(w http.ResponseWriter, r *http.Request) {
 
 		}
 
-		var hero models.Hero
-		hero.Id = bson.NewObjectId()
-		hero.HeroName = r.PostFormValue("heroName")
+		var villain models.Villain
+		villain.Id = primitive.NewObjectID()
+		villain.VillainName = r.PostFormValue("villainName")
 		if byteData != nil {
-			hero.Thumbnail.Id = bson.NewObjectId()
-			hero.Thumbnail.IdHeroRef = hero.Id
-			hero.Thumbnail.Content, err = UploadFileOnAzure(byteData, strings.ToLower(hero.HeroName))
+			villain.Thumbnail.Id = primitive.NewObjectID()
+			villain.Thumbnail.IdVillainRef = villain.Id
+			villain.Thumbnail.Content, err = UploadOnAzure(byteData, strings.ToLower(villain.VillainName))
 			if err != nil {
 				responses.Erro(w, http.StatusInternalServerError, err)
 				return
 			}
 		}
 
-		hero.LastName = r.PostFormValue("lastName")
-		hero.TrueName = r.PostFormValue("trueName")
-		hero.Description = r.PostFormValue("description")
-		hero.Age, err = strconv.ParseInt(r.PostFormValue("age"), 10, 64)
+		villain.LastName = r.PostFormValue("lastName")
+		villain.TrueName = r.PostFormValue("trueName")
+		villain.Description = r.PostFormValue("description")
+		villain.Age, err = strconv.ParseInt(r.PostFormValue("age"), 10, 64)
 		if err != nil {
 			responses.Erro(w, http.StatusInternalServerError, errors.New("error while trying to convert string to int on age"+err.Error()))
 			return
 		}
-		hero.HeroRank, err = strconv.ParseInt(r.PostFormValue("heroRank"), 10, 64)
+		villain.VillainRank, err = strconv.ParseInt(r.PostFormValue("villainRank"), 10, 64)
 		if err != nil {
-			responses.Erro(w, http.StatusInternalServerError, errors.New("error while trying to convert string to int on heroRank"+err.Error()))
+			responses.Erro(w, http.StatusInternalServerError, errors.New("error while trying to convert string to int on villainRank"+err.Error()))
 			return
 		}
 
@@ -264,7 +258,7 @@ func CreateHero(w http.ResponseWriter, r *http.Request) {
 			return
 		} */
 
-		if err = hero.Preparar(); err != nil {
+		if err = villain.Preparar(); err != nil {
 			responses.Erro(w, http.StatusInternalServerError, err)
 			return
 		}
@@ -276,19 +270,18 @@ func CreateHero(w http.ResponseWriter, r *http.Request) {
 		}
 		defer db.Disconnect(context.Background())
 
-		repo := repository.NewHeroRepository(db)
-		err = repo.CreateHero(hero)
+		repo := repository.NewVillainRepository(db)
+		err = repo.CreateVillain(villain)
 		if err != nil {
 			responses.Erro(w, http.StatusInternalServerError, err)
 			return
 		}
-		responses.JSON(w, http.StatusOK, "Hero created Successfully")
+		responses.JSON(w, http.StatusOK, "Villain created Successfully")
 		//responses.JSON(w, 200, dataBytes.Bytes())
 	}
-
 }
 
-func UploadFileOnAzure(bytesToUpload []byte, heroName string) (string, error) {
+func UploadOnAzure(bytesToUpload []byte, villainName string) (string, error) {
 
 	url, ok := os.LookupEnv("AZURE_URL")
 	if !ok {
@@ -319,7 +312,7 @@ func UploadFileOnAzure(bytesToUpload []byte, heroName string) (string, error) {
 	containerName := string(os.Getenv("CONTAINER_NAME"))
 	fmt.Printf("Creating container %s \n", containerName)
 
-	containerClient, err := serviceClient.NewContainerClient(containerName + heroName)
+	containerClient, err := serviceClient.NewContainerClient(containerName + villainName)
 	if err != nil {
 		//responses.Erro(w, http.StatusInternalServerError, errors.New("Error on container "+err.Error()))
 		return "", errors.New("Error on container " + err.Error())
@@ -333,7 +326,7 @@ func UploadFileOnAzure(bytesToUpload []byte, heroName string) (string, error) {
 
 	data := bytesToUpload
 
-	blobName := "blob-" + heroName
+	blobName := "blob-" + villainName
 
 	blobClient, err := containerClient.NewBlockBlobClient(blobName)
 
@@ -385,10 +378,18 @@ func UploadFileOnAzure(bytesToUpload []byte, heroName string) (string, error) {
 	return blobClient.URL(), nil
 }
 
-func UpdateHero(w http.ResponseWriter, r *http.Request) {
+/* func CreateVillain(url string, paramsText map[string]interface{},imageVillain models.VillainFile){
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		responses.JSON(w, http.StatusBadRequest, err)
+	}r.MultipartForm.File["file"][0].Header.Get("Content-Type")!="image/png" essa linha pega o mimetype do arquivo
+	responses.JSON(w, 200,r.MultipartForm.File["file"][0].Header.Get("Content-Type"))
+
+} */
+func UpdateVillain(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	heroId := params["heroId"]
-	if len(heroId) <= 0 || heroId == "" {
+	villainId := params["villainId"]
+	if len(villainId) <= 0 || villainId == "" {
 		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
 		return
 	}
@@ -401,13 +402,13 @@ func UpdateHero(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Disconnect(context.Background())
 
-	repo := repository.NewHeroRepository(db)
-	heroInDB, err := repo.FindHeroByID(heroId)
+	repo := repository.NewVillainRepository(db)
+	villainInDB, err := repo.FindVillainByID(villainId)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
-	if heroInDB.Id.Hex() != heroId {
+	if villainInDB.Id.Hex() != villainId {
 		responses.Erro(w, http.StatusForbidden, errors.New("forbidden action"))
 		return
 	}
@@ -416,35 +417,35 @@ func UpdateHero(w http.ResponseWriter, r *http.Request) {
 		responses.Erro(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	var hero models.Hero
-	if err = json.Unmarshal(reqBody, &hero); err != nil {
+	var villain models.Villain
+	if err = json.Unmarshal(reqBody, &villain); err != nil {
 		responses.Erro(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if err = hero.Preparar(); err != nil {
+	if err = villain.Preparar(); err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 	/*fazer a func de preparar*/
 	/*
-		if erro = hero.prepare(); erro != nil {
+		if erro = villain.prepare(); erro != nil {
 				responses.Erro(w, http.StatusBadRequest, erro)
 				return
 			}
 	*/
 
-	if err = repo.UpdateHero(heroId, hero); err != nil {
+	if err = repo.UpdateVillain(villainId, villain); err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 
 }
-func DeleteHero(w http.ResponseWriter, r *http.Request) {
+func DeleteVillain(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	heroId := params["heroId"]
-	if len(heroId) <= 0 || heroId == "" {
+	villainId := params["villainId"]
+	if len(villainId) <= 0 || villainId == "" {
 		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
 		return
 	}
@@ -456,20 +457,20 @@ func DeleteHero(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Disconnect(context.Background())
 
-	repo := repository.NewHeroRepository(db)
-	if err = repo.DeleteHero(heroId); err != nil {
+	repo := repository.NewVillainRepository(db)
+	if err = repo.DeleteVillain(villainId); err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	responses.JSON(w, http.StatusOK, " Hero deleted successfully! ")
+	responses.JSON(w, http.StatusOK, " Villain deleted successfully! ")
 
 }
 
-// func AddHeroImage(w http.ResponseWriter, r *http.Request) {
+// func AddVillainImage(w http.ResponseWriter, r *http.Request) {
 // 	const MaxUploadSize = 10 << 20
 // 	params := mux.Vars(r)
-// 	heroId, err := primitive.ObjectIDFromHex(params["heroId"])
+// 	villainId, err := primitive.ObjectIDFromHex(params["villainId"])
 // 	if err != nil {
 // 		responses.Erro(w, http.StatusInternalServerError, err)
 // 		return
@@ -481,8 +482,8 @@ func DeleteHero(w http.ResponseWriter, r *http.Request) {
 // 		return
 // 	}
 
-// 	if len(heroId) <= 0 || heroId.Hex() == "" {
-// 		responses.Erro(w, http.StatusInternalServerError, errors.New(" Sorry, we can't upload image to null hero"))
+// 	if len(villainId) <= 0 || villainId.Hex() == "" {
+// 		responses.Erro(w, http.StatusInternalServerError, errors.New(" Sorry, we can't upload image to null villain"))
 // 		return
 // 	}
 
@@ -535,21 +536,22 @@ func DeleteHero(w http.ResponseWriter, r *http.Request) {
 // 	}
 // 	defer db.Disconnect(context.Background())
 
-// 	repo := repository.NewHeroFileRepository(db)
-// 	heroFile := models.HeroFile{}
-// 	heroFile.Path = pathFromFile
-// 	heroFile.FileName = fileHandler.Filename
-// 	heroFile.FileData = imgBase64Str
-// 	heroFile.IdHeroRef = heroId
-// 	repo.AddHeroFile(heroFile)
+// 	repo := repository.NewVillainFileRepository(db)
+// 	villainFile := models.VillainFile{}
+// 	villainFile.Path = pathFromFile
+// 	villainFile.FileName = fileHandler.Filename
+// 	villainFile.FileData = imgBase64Str
+// 	villainFile.IdVillainRef = villainId
+// 	repo.AddVillainFile(villainFile)
 
 // }
-func FindHeroByHeroName(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	heroName := params["heroName"]
 
-	if len(heroName) <= 0 || heroName == "" {
-		responses.Erro(w, http.StatusNotFound, errors.New("not found"))
+func FindVillainByVillainName(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	villainName := params["villainName"]
+
+	if len(villainName) <= 0 || villainName == "" {
+		responses.Erro(w, http.StatusInternalServerError, errors.New(" Inválid villainName! "))
 		return
 	}
 
@@ -560,12 +562,28 @@ func FindHeroByHeroName(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Disconnect(context.Background())
 
-	repo := repository.NewHeroRepository(db)
-	hero, err := repo.FindHeroByHeroName(heroName)
+	repo := repository.NewVillainRepository(db)
+	villain, err := repo.FindVillainByVillainName(villainName)
 	if err != nil {
-		responses.Erro(w, http.StatusInternalServerError, err)
+		responses.Erro(w, http.StatusInternalServerError, errors.New(" Not found villains with this name! "))
 		return
 	}
-	responses.JSON(w, http.StatusOK, hero)
+	responses.JSON(w, http.StatusOK, villain)
+
+}
+
+func addImage(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, errors.New("Can't upload image"+err.Error()))
+		return
+	}
+
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(r.MultipartForm.File["file"][0].Size))
+
+	dataBytes := bytes.NewBuffer(b)
+
+	responses.JSON(w, 200, dataBytes)
 
 }

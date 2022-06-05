@@ -24,6 +24,10 @@ services:
         URL: mongodb://mongodb:${MONGO_PORT}/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false
         DBNAME: ${DBNAME}
         MONGO_PORT: ${MONGO_PORT}
+        AZURE_URL: ${AZURE_URL}
+        CONTAINER_NAME: ${CONTAINER_NAME}
+        AZURE_STORAGE_ACCOUNT_NAME: ${AZURE_STORAGE_ACCOUNT_NAME}
+        AZURE_STORAGE_ACCOUNT_KEY: ${AZURE_STORAGE_ACCOUNT_KEY}
     ports:
         - "${API_PORT}:${API_PORT}"
         - "${MONGO_PORT}:${MONGO_PORT}"
