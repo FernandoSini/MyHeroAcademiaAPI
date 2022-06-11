@@ -18,7 +18,7 @@ func ConfigureRoutes(r *mux.Router) *mux.Router {
 	routes := heroesRoute
 	routes = append(routes, villainsRoute...)
 	routes = append(routes, routesUser...)
-	routes = append(routes, routeLogin...)
+	routes = append(routes, routeAuth...)
 
 	for _, route := range routes {
 		//doing same middleware like node js

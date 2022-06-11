@@ -12,16 +12,14 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	//"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 //controllers
 //responsavel por controlar as operacoes, não necessariamente vao executar elas
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+/* func CreateUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, erro := ioutil.ReadAll(r.Body)
 	if erro != nil {
 		responses.Erro(w, http.StatusUnprocessableEntity, erro)
@@ -62,7 +60,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	responses.JSON(w, http.StatusOK, usuario)
 
-}
+} */
 
 func FindAllUsers(w http.ResponseWriter, r *http.Request) {
 	db, err := database.Connect()

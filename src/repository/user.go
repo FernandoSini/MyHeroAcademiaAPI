@@ -27,7 +27,7 @@ func NovoRepositorioDeUsuarios(db *mongo.Client) *User {
 // print(teste)
 
 //insere um usuario no banco de dados
-func (repo User) Criar(user models.User) (string, error) {
+func (repo User) Create(user models.User) (string, error) {
 	statement, erro := repo.db.Database(os.Getenv("DBNAME")).
 		Collection("User").
 		InsertOne(context.Background(), user)
